@@ -1,13 +1,17 @@
 ﻿using AutoMapper;
 using Mango.Services.CouponAPI.Data;
 using Mango.Services.CouponAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace Mango.Services.CouponAPI.Controllers;
+
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize] // Uncomment this line to enable authorization
 public class CouponController : ControllerBase
 {
 
@@ -42,7 +46,7 @@ public class CouponController : ControllerBase
 
 
     [HttpGet]
-    [Route("{id}")]
+    [Route("{id:int}")]
     public ResponseDto Get(int id)
     {
         try
@@ -145,6 +149,7 @@ public class CouponController : ControllerBase
     }
 
     [HttpDelete]
+    [Route("{id:int}")]
     public ResponseDto Delete(int id)
     {
         try

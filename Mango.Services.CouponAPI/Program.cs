@@ -1,7 +1,12 @@
+using System.Text;
 using AutoMapper;
 using Mango.Services.CouponAPI;
 using Mango.Services.CouponAPI.Data;
+using Mango.Services.CouponAPI.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(option =>
     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+
 //Enable the service Auto Mapper
 IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
 builder.Services.AddSingleton(mapper);
@@ -23,7 +29,78 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+//builder.Services.AddSwaggerGen();
+//Enable Security with Swagger(Vid 65-1)
+#region EnableSecurityToSwagger
+
+
+    builder.Services.AddSwaggerGen(option =>
+    {
+        option.AddSecurityDefinition(name: JwtBearerDefaults.AuthenticationScheme, securityScheme: new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Description = "Enter the Bearer Authorization string as following: `Bearer Generated-JWT-Token`",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer"
+        });
+        option.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference= new OpenApiReference
+                    {
+                        Type=ReferenceType.SecurityScheme,
+                        Id=JwtBearerDefaults.AuthenticationScheme
+                    }
+                }, new string[]{}
+            }
+        });
+    });
+
+
+#endregion
+
+
+//Enable the security(Vid 64-2)
+#region EnableSecurityToService
+
+    //No es requerido
+    //var settingsSection = builder.Configuration.GetSection("ApiSettings");
+
+    //var secret = builder.Configuration.GetValue<string>("ApiSettings:Secret");
+    //var issuer = builder.Configuration.GetValue<string>("ApiSettings:Issuer");
+    //var audience = builder.Configuration.GetValue<string>("ApiSettings:Audience");
+
+    //var key = Encoding.ASCII.GetBytes(secret);
+
+    //builder.Services.AddAuthentication(x =>
+    //{
+    //    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    //    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+
+    //}).AddJwtBearer( x =>
+    //{
+    //    x.TokenValidationParameters = new TokenValidationParameters
+    //    {
+    //        ValidateIssuerSigningKey = true,
+    //        IssuerSigningKey = new SymmetricSecurityKey(key),
+    //        ValidateIssuer = true,
+    //        ValidIssuer = issuer,
+    //        ValidateAudience = true,
+    //        ValidAudience = audience
+    //    };
+    //});
+
+    //builder.Services.AddAuthorization();
+
+#endregion
+
+//Enable the security(Vid 64-2), pass to class WebApplicationBuilderExtensions
+builder.AddAppAuthetication();
+
 
 var app = builder.Build();
 
@@ -36,9 +113,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+//Enable Authentication(Vid 64)
+app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();
+
+ApplyMigration();
 
 app.Run();
 
